@@ -1,0 +1,23 @@
+{
+ "name": "9xbuddy-algorithm-detector",
+  "version": "1.0.0",
+  "description": "Dynamic algorithm detection for 9xBuddy URL decryption",
+  "main": ".github/scripts/detect-algorithm.js",
+  "scripts": {
+    "detect": "node .github/scripts/detect-algorithm.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "9xbuddy",
+    "algorithm-detection",
+    "reverse-engineering",
+    "url-decryption"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.9.0",
+    "cheerio": "^1.1.0",
+    "crypto-js": "^4.2.0"
+  }
+}
