@@ -32,7 +32,7 @@ jobs:
         npm install axios cheerio crypto-js
     
     - name: Run Algorithm Detection
-      run: node .github/scripts/detect-algorithm.js
+      run: node detect-algorithm.js
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     
