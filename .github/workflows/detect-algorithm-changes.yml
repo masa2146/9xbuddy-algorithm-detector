@@ -1,0 +1,76 @@
+# .github/workflows/detect-algorithm-changes.yml
+name: Detect 9xBuddy Algorithm Changes
+
+on:
+  schedule:
+    # Her 6 saatte bir çalıştır
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+    # Manuel çalıştırma imkanı
+  push:
+    paths:
+      - '.github/workflows/detect-algorithm-changes.yml'
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+    
+    - name: Install Dependencies
+      run: |
+        npm install axios cheerio crypto-js
+    
+    - name: Run Algorithm Detection
+      run: node .github/scripts/detect-algorithm.js
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Check for Changes
+      id: check-changes
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "changes=true" >> $GITHUB_OUTPUT
+          echo "Algorithm changes detected!"
+        else
+          echo "changes=false" >> $GITHUB_OUTPUT
+          echo "No algorithm changes detected."
+        fi
+    
+    - name: Commit and Push Changes
+      if: steps.check-changes.outputs.changes == 'true'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add config/
+        git commit -m "🤖 Algorithm update detected - $(date '+%Y-%m-%d %H:%M:%S')"
+        git push
+    
+    - name: Create Issue on Algorithm Change
+      if: steps.check-changes.outputs.changes == 'true'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: '🚨 Algorithm Change Detected',
+            body: `Algorithm change has been detected and updated.
+            
+            **Timestamp:** ${new Date().toISOString()}
+            **Workflow:** ${context.workflow}
+            **Run ID:** ${context.runId}
+            
+            Please review the changes in the config directory.`,
+            labels: ['algorithm-change', 'automated']
+          })
