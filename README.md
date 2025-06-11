@@ -1,6 +1,5 @@
 # 🔓 Dynamic 9xBuddy Decrypt System
-
-[![GitHub Actions](https://github.com/USERNAME/REPO/workflows/Detect%209xBuddy%20Algorithm%20Changes/badge.svg)](https://github.com/USERNAME/REPO/actions)
+[![GitHub Actions](https://github.com/masa2146/9xbuddy-algorithm-detector/workflows/Detect%209xBuddy%20Algorithm%20Changes/badge.svg)](https://github.com/masa2146/9xbuddy-algorithm-detector/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-orange.svg)](https://workers.cloudflare.com/)
 [![Flutter Ready](https://img.shields.io/badge/Flutter-Ready-blue.svg)](https://flutter.dev/)
