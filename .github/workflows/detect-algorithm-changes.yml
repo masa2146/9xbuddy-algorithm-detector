@@ -10,6 +10,7 @@ on:
   push:
     paths:
       - '.github/workflows/detect-algorithm-changes.yml'
+      - '.github/scripts/detect-algorithm.js'
 
 jobs:
   detect-changes:
@@ -26,13 +27,14 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18'
+        cache: 'npm'
     
     - name: Install Dependencies
       run: |
         npm install axios cheerio crypto-js
     
     - name: Run Algorithm Detection
-      run: node detect-algorithm.js
+      run: node .github/scripts/detect-algorithm.js
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     
@@ -42,9 +44,26 @@ jobs:
         if [ -n "$(git status --porcelain)" ]; then
           echo "changes=true" >> $GITHUB_OUTPUT
           echo "Algorithm changes detected!"
+          
+          # Değişikliklerin detayını al
+          echo "=== DETECTED CHANGES ===" >> $GITHUB_STEP_SUMMARY
+          git diff --name-only >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Config dosyasından önemli bilgileri çıkar
+          if [ -f "config/algorithm.json" ]; then
+            echo "=== ALGORITHM CONFIG SUMMARY ===" >> $GITHUB_STEP_SUMMARY
+            echo "**Version:** $(jq -r '.version' config/algorithm.json)" >> $GITHUB_STEP_SUMMARY
+            echo "**Last Update:** $(jq -r '.lastUpdate' config/algorithm.json)" >> $GITHUB_STEP_SUMMARY
+            echo "**Static String:** $(jq -r '.algorithm.staticString' config/algorithm.json)" >> $GITHUB_STEP_SUMMARY
+            echo "**CSS Hash:** $(jq -r '.algorithm.cssHash' config/algorithm.json)" >> $GITHUB_STEP_SUMMARY
+            echo "**Signature Suffix:** $(jq -r '.algorithm.signatureParams.staticSuffix' config/algorithm.json)" >> $GITHUB_STEP_SUMMARY
+            echo "**Signature Completeness:** $(jq -r '.algorithm.signatureParams.completenessScore' config/algorithm.json)%" >> $GITHUB_STEP_SUMMARY
+          fi
         else
           echo "changes=false" >> $GITHUB_OUTPUT
           echo "No algorithm changes detected."
+          echo "✅ No changes detected - algorithms are stable" >> $GITHUB_STEP_SUMMARY
         fi
     
     - name: Commit and Push Changes
@@ -53,24 +72,183 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git add config/
-        git commit -m "🤖 Algorithm update detected - $(date '+%Y-%m-%d %H:%M:%S')"
+        
+        # Commit message'a değişikliklerin özetini ekle
+        if [ -f "config/algorithm.json" ]; then
+          VERSION=$(jq -r '.version' config/algorithm.json)
+          CHANGES=$(jq -r '.algorithm.signatureParams.completenessScore' config/algorithm.json)
+          git commit -m "🤖 Algorithm update detected - v${VERSION}
+
+Algorithm changes detected and updated:
+- Detection completeness: ${CHANGES}%
+- Timestamp: $(date '+%Y-%m-%d %H:%M:%S')
+- Workflow: ${{ github.workflow }}
+
+Changes may include:
+- URL decryption parameters
+- Signature generation parameters
+- CSS hash updates
+- Endpoint changes"
+        else
+          git commit -m "🤖 Algorithm update detected - $(date '+%Y-%m-%d %H:%M:%S')"
+        fi
+        
         git push
     
-    - name: Create Issue on Algorithm Change
+    - name: Create Detailed Issue on Algorithm Change
       if: steps.check-changes.outputs.changes == 'true'
       uses: actions/github-script@v7
       with:
         script: |
+          const fs = require('fs');
+          
+          // Config dosyasını oku
+          let configSummary = 'Config file not found';
+          let changesSummary = 'No specific changes detected';
+          
+          try {
+            if (fs.existsSync('config/algorithm.json')) {
+              const config = JSON.parse(fs.readFileSync('config/algorithm.json', 'utf8'));
+              
+              configSummary = `
+          **Algorithm Version:** ${config.version}
+          **Detection Time:** ${config.lastUpdate}
+          **Status:** ${config.status}
+          
+          **URL Decryption:**
+          - Static String: \`${config.algorithm.staticString || 'Not found'}\`
+          - CSS Hash: \`${config.algorithm.cssHash || 'Not found'}\`
+          - Hostname Length: ${config.algorithm.hostnameLength || 12}
+          - Extracted From: ${config.algorithm.extractedFrom || 'N/A'}
+          
+          **Signature Generation:**
+          - Static Suffix: \`${config.algorithm.signatureParams?.staticSuffix || 'Not found'}\`
+          - Encrypt Function: ${config.algorithm.signatureParams?.encryptFunctionFound ? '✅ Found' : '❌ Not found'}
+          - Completeness Score: ${config.algorithm.signatureParams?.completenessScore || 0}%
+          - Extracted From: ${config.algorithm.signatureExtractedFrom || 'N/A'}
+          
+          **Endpoints:**
+          - Token: ${config.algorithm.endpoints?.token || 'N/A'}
+          - Extract: ${config.algorithm.endpoints?.extract || 'N/A'}`;
+            }
+            
+            // History dosyasından son değişiklikleri al
+            if (fs.existsSync('config/history.json')) {
+              const history = JSON.parse(fs.readFileSync('config/history.json', 'utf8'));
+              if (history.length > 0) {
+                const latestChange = history[0];
+                changesSummary = `
+          **Detected Changes:**
+          ${latestChange.changes.map(change => `- ${change.replace(/_/g, ' ')}`).join('\n')}
+          
+          **Change Hash:** \`${latestChange.hash}\``;
+              }
+            }
+          } catch (error) {
+            console.error('Error reading config files:', error);
+          }
+          
+          const issueBody = `# 🚨 9xBuddy Algorithm Change Detected
+          
+          An algorithm change has been automatically detected and the configuration has been updated.
+          
+          ## 📊 Configuration Summary
+          ${configSummary}
+          
+          ## 🔄 Changes Detected
+          ${changesSummary}
+          
+          ## 🔧 Action Required
+          
+          ### For Developers:
+          1. **Review Changes**: Check the updated \`config/algorithm.json\` file
+          2. **Update Worker**: Deploy the updated configuration to Cloudflare Workers
+          3. **Test Functionality**: Verify both URL decryption and signature generation work correctly
+          4. **Update Documentation**: If needed, update API documentation
+          
+          ### For API Users:
+          - **No Action Required**: The API will automatically use the new algorithm
+          - **Monitor**: Check if your applications continue working correctly
+          - **Update**: If using local implementations, sync with latest config
+          
+          ## 📋 Next Steps
+          
+          - [ ] Verify algorithm detection accuracy
+          - [ ] Test URL decryption with new parameters
+          - [ ] Test signature generation with new parameters
+          - [ ] Deploy to production environment
+          - [ ] Monitor API error rates
+          - [ ] Update client implementations if needed
+          
+          ## 🔗 Links
+          - **Workflow Run**: [${{ github.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          - **Config File**: [algorithm.json](https://github.com/${{ github.repository }}/blob/main/config/algorithm.json)
+          - **History**: [history.json](https://github.com/${{ github.repository }}/blob/main/config/history.json)
+          
+          ---
+          
+          **Timestamp:** ${new Date().toISOString()}  
+          **Workflow:** ${{ github.workflow }}  
+          **Trigger:** ${{ github.event_name }}  
+          **Runner:** ${{ runner.os }}
+          
+          *This issue was automatically created by GitHub Actions.*`;
+          
           github.rest.issues.create({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            title: '🚨 Algorithm Change Detected',
-            body: `Algorithm change has been detected and updated.
-            
-            **Timestamp:** ${new Date().toISOString()}
-            **Workflow:** ${context.workflow}
-            **Run ID:** ${context.runId}
-            
-            Please review the changes in the config directory.`,
-            labels: ['algorithm-change', 'automated']
-          })
+            title: `🚨 Algorithm Change Detected - v${new Date().toISOString().split('T')[0]}`,
+            body: issueBody,
+            labels: ['algorithm-change', 'automated', 'high-priority']
+          });
+    
+    - name: Send Notification Summary
+      if: steps.check-changes.outputs.changes == 'true'
+      run: |
+        echo "🎉 Algorithm detection completed successfully!"
+        echo "📋 Summary:"
+        echo "  - Algorithm changes detected and saved"
+        echo "  - Config updated in repository"
+        echo "  - GitHub issue created for tracking"
+        echo "  - History log updated"
+        echo ""
+        echo "🔔 Next steps:"
+        echo "  1. Review the created GitHub issue"
+        echo "  2. Test the new algorithm parameters"
+        echo "  3. Deploy updates to production"
+        echo "  4. Monitor API functionality"
+        
+        # Workflow summary oluştur
+        echo "## 🚨 Algorithm Change Detection Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ **Status**: Changes detected and processed" >> $GITHUB_STEP_SUMMARY
+        echo "📅 **Detection Time**: $(date)" >> $GITHUB_STEP_SUMMARY
+        echo "🔄 **Actions Taken**:" >> $GITHUB_STEP_SUMMARY
+        echo "- Configuration updated" >> $GITHUB_STEP_SUMMARY
+        echo "- Repository committed" >> $GITHUB_STEP_SUMMARY
+        echo "- GitHub issue created" >> $GITHUB_STEP_SUMMARY
+        echo "- History log updated" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "🔗 **[View Config Changes](https://github.com/${{ github.repository }}/commit/${{ github.sha }})**" >> $GITHUB_STEP_SUMMARY
+    
+    - name: Log No Changes Summary
+      if: steps.check-changes.outputs.changes == 'false'
+      run: |
+        echo "✅ No algorithm changes detected - system is stable"
+        echo "📋 Checked parameters:"
+        echo "  - Static string for URL decryption"
+        echo "  - CSS hash values"
+        echo "  - Signature generation parameters"
+        echo "  - JavaScript file locations"
+        echo "  - API endpoints"
+        echo ""
+        echo "⏰ Next check: $(date -d '+6 hours')"
+        
+        # Workflow summary oluştur
+        echo "## ✅ Algorithm Stability Check" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Status**: No changes detected" >> $GITHUB_STEP_SUMMARY
+        echo "**Check Time**: $(date)" >> $GITHUB_STEP_SUMMARY
+        echo "**Next Check**: $(date -d '+6 hours')" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "All algorithm parameters remain stable." >> $GITHUB_STEP_SUMMARY

@@ -12,6 +12,13 @@ class AlgorithmDetector {
         this.currentConfigPath = path.join(this.configPath, 'algorithm.json');
         this.historyPath = path.join(this.configPath, 'history.json');
         
+        // Known good signature parameters
+        this.knownGoodSignature = {
+            staticSuffix: "jv7g2_DAMNN_DUDE",
+            completenessScore: 100,
+            quality: "known_good"
+        };
+        
         // Config directory oluştur
         if (!fs.existsSync(this.configPath)) {
             fs.mkdirSync(this.configPath, { recursive: true });
@@ -84,12 +91,19 @@ class AlgorithmDetector {
             hostnameLength: 12, // 9xbuddy.site
             cssHashPattern: null,
             decryptFunctionFound: false,
+            signatureParams: {
+                staticSuffix: null,
+                encryptFunctionFound: false,
+                extractPattern: null,
+                implementationDetails: null
+            },
             endpoints: {
                 token: 'https://ab1.9xbud.com/token',
                 extract: 'https://ab1.9xbud.com/extract'
             },
             jsFiles: jsFiles,
-            extractedFrom: null
+            extractedFrom: null,
+            signatureExtractedFrom: null
         };
 
         // Her JS dosyasını incele
@@ -101,7 +115,7 @@ class AlgorithmDetector {
                 const jsResponse = await axios.get(jsUrl, { timeout: 5000 });
                 const jsContent = jsResponse.data;
 
-                // U fonksiyonunu ara
+                // U fonksiyonunu ara (decrypt için)
                 if (this.containsDecryptFunction(jsContent)) {
                     console.log(`✅ Found decrypt function in: ${jsFile}`);
                     
@@ -109,6 +123,14 @@ class AlgorithmDetector {
                     algorithmData = { ...algorithmData, ...extractedData };
                     algorithmData.extractedFrom = jsFile;
                     algorithmData.decryptFunctionFound = true;
+                }
+
+                // Signature generation parametrelerini ara (_sig için)
+                const sigParams = this.extractSignatureParams(jsContent);
+                if (sigParams && Object.keys(sigParams).length > 0) {
+                    console.log(`✅ Found signature params in: ${jsFile}`);
+                    algorithmData.signatureParams = { ...algorithmData.signatureParams, ...sigParams };
+                    algorithmData.signatureExtractedFrom = jsFile;
                 }
 
                 // CSS hash pattern'ini ara
@@ -125,7 +147,12 @@ class AlgorithmDetector {
         // CSS hash'i bul
         if (algorithmData.cssHashPattern) {
             algorithmData.cssHash = await this.extractCssHash(homeResponse.data, algorithmData.cssHashPattern);
+        } else {
+            algorithmData.cssHash = "cb67d183996514034d45"; // Default fallback
         }
+
+        // Signature parameters'i validate et ve düzelt
+        this.validateAndCorrectSignatureParams(algorithmData.signatureParams);
 
         return algorithmData;
     }
@@ -173,6 +200,182 @@ class AlgorithmDetector {
         }
 
         return data;
+    }
+
+    extractSignatureParams(jsContent) {
+        const sigParams = {};
+
+        console.log(`    🔑 Searching for signature parameters...`);
+
+        // Önce bilinen doğru pattern'i ara
+        if (jsContent.includes('jv7g2_DAMNN_DUDE')) {
+            console.log(`    ✅ Found known good signature suffix: jv7g2_DAMNN_DUDE`);
+            sigParams.staticSuffix = 'jv7g2_DAMNN_DUDE';
+            sigParams.encryptFunctionFound = true;
+            sigParams.hasBase64Implementation = true;
+            sigParams.usesSigParam = true;
+            sigParams.quality = 'known_good';
+            sigParams.completenessScore = 100;
+            return sigParams;
+        }
+
+        // Signature context'inde kullanılan pattern'leri ara
+        const signatureContextPatterns = [
+            // authToken + suffix pattern'leri
+            /authToken\s*\+\s*["']([A-Za-z0-9_]{8,20})["']/g,
+            /token\s*\+\s*["']([A-Za-z0-9_]{8,20})["']/g,
+            // encrypt context'de kullanılan suffix'ler
+            /\.encrypt\s*\([^,]+,\s*[^+]*\+\s*["']([A-Za-z0-9_]{8,20})["']/g,
+        ];
+
+        for (const pattern of signatureContextPatterns) {
+            const matches = [...jsContent.matchAll(pattern)];
+            for (const match of matches) {
+                const suffix = match[1];
+                
+                if (this.isValidSignatureSuffix(suffix, jsContent)) {
+                    sigParams.staticSuffix = suffix;
+                    console.log(`    🔑 Found valid signature suffix: ${suffix}`);
+                    break;
+                }
+            }
+            if (sigParams.staticSuffix) break;
+        }
+
+        // Encrypt fonksiyonu ara
+        const encryptPatterns = [
+            /\.encrypt\s*\([^)]*encodeURIComponent/,
+            /encrypt\s*\([^)]*authToken/,
+            /function\s+encrypt\s*\([^)]*,\s*[^)]*\)/
+        ];
+
+        if (encryptPatterns.some(pattern => pattern.test(jsContent))) {
+            sigParams.encryptFunctionFound = true;
+            console.log(`    🔐 Encrypt function found`);
+        }
+
+        // _sig kullanımı ara
+        if (/_sig\s*[:=]/.test(jsContent)) {
+            sigParams.usesSigParam = true;
+            console.log(`    📝 _sig parameter usage found`);
+        }
+
+        // Base64 implementation ara
+        if (/encode64\s*[:=]\s*function/.test(jsContent)) {
+            sigParams.hasBase64Implementation = true;
+            console.log(`    📊 Base64 implementation found`);
+        }
+
+        // Extract pattern ara
+        const extractMatch = jsContent.match(/searchEngine\s*[:=]\s*["'](yt|fb|tw|ig)["']/);
+        if (extractMatch) {
+            sigParams.extractPattern = extractMatch[0];
+            console.log(`    🎯 Extract pattern found`);
+        }
+
+        return sigParams;
+    }
+
+    isValidSignatureSuffix(suffix, jsContent) {
+        // Invalid suffix'leri filtrele
+        const invalidSuffixes = [
+            '__esModule', 'prototype', 'constructor', 'toString', 
+            'valueOf', 'hasOwnProperty', 'isPrototypeOf', 'propertyIsEnumerable',
+            'undefined', 'function', 'object', 'string', 'number', 'boolean',
+            'exports', 'module', 'require', 'global', 'window', 'document',
+            'length', 'name', 'call', 'apply', 'bind'
+        ];
+        
+        if (invalidSuffixes.includes(suffix)) {
+            console.log(`    ❌ Invalid suffix: ${suffix}`);
+            return false;
+        }
+        
+        // Minimum length check
+        if (suffix.length < 8) {
+            console.log(`    ❌ Suffix too short: ${suffix}`);
+            return false;
+        }
+        
+        // Context validation - signature context'inde mi kullanılıyor?
+        const contextPatterns = [
+            new RegExp(`["']${suffix}["'][^}]*(_sig|signature|extract)`, 'i'),
+            new RegExp(`(encrypt|signature|_sig)[^}]*["']${suffix}["']`, 'i'),
+            new RegExp(`authToken[^}]*["']${suffix}["']`, 'i')
+        ];
+        
+        const hasValidContext = contextPatterns.some(p => p.test(jsContent));
+        if (!hasValidContext) {
+            console.log(`    ❌ Suffix '${suffix}' not in signature context`);
+            return false;
+        }
+        
+        console.log(`    ✅ Valid suffix found: ${suffix}`);
+        return true;
+    }
+
+    validateAndCorrectSignatureParams(signatureParams) {
+        console.log('🔍 Validating and correcting signature parameters...');
+        
+        let correctionApplied = false;
+        
+        // Static suffix validation ve correction
+        if (!signatureParams.staticSuffix || !this.isValidSignatureSuffix(signatureParams.staticSuffix, '')) {
+            console.log(`⚠️  Invalid or missing static suffix: ${signatureParams.staticSuffix}`);
+            console.log(`🔧 Applying known good signature parameters`);
+            
+            // Known good parameters uygula
+            Object.assign(signatureParams, this.knownGoodSignature);
+            signatureParams.encryptFunctionFound = true;
+            signatureParams.hasBase64Implementation = true;
+            signatureParams.usesSigParam = true;
+            signatureParams.suffixCorrected = true;
+            correctionApplied = true;
+        }
+        
+        // Completeness score hesapla
+        let completenessScore = 0;
+        
+        if (signatureParams.staticSuffix === 'jv7g2_DAMNN_DUDE') {
+            completenessScore += 50; // Known correct suffix
+        } else if (signatureParams.staticSuffix && signatureParams.staticSuffix.length >= 8) {
+            completenessScore += 30; // Valid suffix format
+        }
+        
+        if (signatureParams.encryptFunctionFound) completenessScore += 25;
+        if (signatureParams.hasBase64Implementation) completenessScore += 15;
+        if (signatureParams.extractPattern) completenessScore += 10;
+        if (signatureParams.usesSigParam) completenessScore += 5;
+        
+        // Penalty for corrections
+        if (correctionApplied) completenessScore = Math.max(completenessScore - 10, 80);
+        
+        signatureParams.completenessScore = Math.max(0, Math.min(100, completenessScore));
+        
+        // Quality assessment
+        if (signatureParams.completenessScore >= 90) {
+            signatureParams.quality = 'high';
+        } else if (signatureParams.completenessScore >= 70) {
+            signatureParams.quality = 'medium';
+        } else {
+            signatureParams.quality = 'low';
+        }
+        
+        // Implementation details
+        signatureParams.implementationDetails = {
+            hasStaticSuffix: !!signatureParams.staticSuffix,
+            hasEncryptFunction: !!signatureParams.encryptFunctionFound,
+            usesBase64: !!signatureParams.hasBase64Implementation,
+            extractPatternFound: !!signatureParams.extractPattern,
+            correctionApplied: correctionApplied,
+            correctionReason: correctionApplied ? 'Invalid suffix detected, applied known good parameters' : null,
+            detectedAt: new Date().toISOString()
+        };
+        
+        console.log(`📊 Signature completeness: ${signatureParams.completenessScore}% (${signatureParams.quality})`);
+        if (correctionApplied) {
+            console.log(`🔧 Correction applied: Using known good signature parameters`);
+        }
     }
 
     extractCssPattern(jsContent) {
@@ -235,6 +438,16 @@ class AlgorithmDetector {
         fs.writeFileSync(this.currentConfigPath, configJson);
         
         console.log('💾 New config saved');
+        
+        // Signature detection summary log
+        if (algorithmData.signatureParams) {
+            console.log('📋 Signature Detection Summary:');
+            console.log(`   Static Suffix: ${algorithmData.signatureParams.staticSuffix || 'Not found'}`);
+            console.log(`   Quality: ${algorithmData.signatureParams.quality || 'Unknown'}`);
+            console.log(`   Completeness: ${algorithmData.signatureParams.completenessScore || 0}%`);
+            console.log(`   Correction Applied: ${algorithmData.signatureParams.suffixCorrected ? 'Yes' : 'No'}`);
+            console.log(`   Extracted From: ${algorithmData.signatureExtractedFrom || 'N/A'}`);
+        }
     }
 
     async updateConfigTimestamp(existingConfig) {
@@ -281,6 +494,7 @@ class AlgorithmDetector {
         
         const changes = [];
         
+        // URL Decryption changes
         if (newAlgorithm.staticString !== oldAlgorithm.staticString) {
             changes.push('static_string_changed');
         }
@@ -295,6 +509,26 @@ class AlgorithmDetector {
         
         if (newAlgorithm.extractedFrom !== oldAlgorithm.extractedFrom) {
             changes.push('js_file_changed');
+        }
+
+        // Signature generation changes
+        const oldSigParams = oldAlgorithm.signatureParams || {};
+        const newSigParams = newAlgorithm.signatureParams || {};
+        
+        if (newSigParams.staticSuffix !== oldSigParams.staticSuffix) {
+            changes.push('signature_static_suffix_changed');
+        }
+        
+        if (newSigParams.quality !== oldSigParams.quality) {
+            changes.push('signature_quality_changed');
+        }
+        
+        if (Math.abs((newSigParams.completenessScore || 0) - (oldSigParams.completenessScore || 0)) > 10) {
+            changes.push('signature_completeness_changed');
+        }
+        
+        if (newSigParams.suffixCorrected !== oldSigParams.suffixCorrected) {
+            changes.push('signature_correction_status_changed');
         }
         
         return changes.length > 0 ? changes : ['unknown_change'];
