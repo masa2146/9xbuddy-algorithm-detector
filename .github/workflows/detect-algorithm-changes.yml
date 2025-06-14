@@ -79,21 +79,21 @@ jobs:
           CHANGES=$(jq -r '.algorithm.signatureParams.completenessScore' config/algorithm.json)
           git commit -m "🤖 Algorithm update detected - v${VERSION}
 
-Algorithm changes detected and updated:
-- Detection completeness: ${CHANGES}%
-- Timestamp: $(date '+%Y-%m-%d %H:%M:%S')
-- Workflow: ${{ github.workflow }}
+        Algorithm changes detected and updated:
+        - Detection completeness: ${CHANGES}%
+        - Timestamp: $(date '+%Y-%m-%d %H:%M:%S')
+        - Workflow: ${{ github.workflow }}
 
-Changes may include:
-- URL decryption parameters
-- Signature generation parameters
-- CSS hash updates
-- Endpoint changes"
-        else
-          git commit -m "🤖 Algorithm update detected - $(date '+%Y-%m-%d %H:%M:%S')"
-        fi
-        
-        git push
+        Changes may include:
+        - URL decryption parameters
+        - Signature generation parameters
+        - CSS hash updates
+        - Endpoint changes"
+                else
+                  git commit -m "🤖 Algorithm update detected - $(date '+%Y-%m-%d %H:%M:%S')"
+                fi
+                
+                git push
     
     - name: Create Detailed Issue on Algorithm Change
       if: steps.check-changes.outputs.changes == 'true'
@@ -194,7 +194,7 @@ Changes may include:
           
           *This issue was automatically created by GitHub Actions.*`;
           
-          github.rest.issues.create({
+          await github.rest.issues.create({
             owner: context.repo.owner,
             repo: context.repo.repo,
             title: `🚨 Algorithm Change Detected - v${new Date().toISOString().split('T')[0]}`,
