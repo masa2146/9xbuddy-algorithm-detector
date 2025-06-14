@@ -1,4 +1,4 @@
-// .github/scripts/detect-algorithm.js
+// .github/scripts/detect-algorithm.js - Fixed Version
 const axios = require('axios');
 const cheerio = require('cheerio');
 const crypto = require('crypto');
@@ -164,42 +164,208 @@ class AlgorithmDetector {
             /function U\s*\(/,
             /\.decrypt\s*\(/,
             /hex2bin/,
-            /\[69,84,65,77,95,89,82,82,79,83\]/
+            /\[69,84,65,77,95,89,82,82,79,83\]/,
+            /\[83,79,82,82,89,95,77,65,84,69\]/ // SORRY_MATE array
         ];
 
         return patterns.some(pattern => pattern.test(jsContent));
     }
 
+    // FİXED: İyileştirilmiş extractAlgorithmParams fonksiyonu
     extractAlgorithmParams(jsContent) {
         const data = {};
 
-        // Static string array'ini bul
-        const staticArrayMatch = jsContent.match(/\[(\d+,\d+,\d+,\d+,\d+,\d+,\d+,\d+,\d+,\d+)\]/);
-        if (staticArrayMatch) {
-            const arrayStr = staticArrayMatch[1];
-            const numbers = arrayStr.split(',').map(n => parseInt(n.trim()));
-            data.staticStringArray = numbers;
+        console.log('🔍 Extracting algorithm parameters...');
+
+        // 1. Static string array'ini bul - daha geniş pattern'ler
+        const staticArrayPatterns = [
+            // Temel array pattern
+            /\[(\d+,\s*\d+,\s*\d+,\s*\d+,\s*\d+,\s*\d+,\s*\d+,\s*\d+,\s*\d+,\s*\d+)\]/g,
+            // Decrypt context'inde kullanılan array
+            /decrypt[^{]*{\s*[^}]*\[(\d+,\s*\d+,\s*\d+,\s*\d+,\s*\d+,\s*\d+,\s*\d+,\s*\d+,\s*\d+,\s*\d+)\]/g,
+            // Variable assignment context
+            /var\s+\w+\s*=\s*\[(\d+,\s*\d+,\s*\d+,\s*\d+,\s*\d+,\s*\d+,\s*\d+,\s*\d+,\s*\d+,\s*\d+)\]/g,
+            // Function parameter context
+            /function[^(]*\([^)]*\)\s*{\s*[^}]*\[(\d+,\s*\d+,\s*\d+,\s*\d+,\s*\d+,\s*\d+,\s*\d+,\s*\d+,\s*\d+,\s*\d+)\]/g
+        ];
+
+        let staticArrayFound = false;
+        
+        for (const pattern of staticArrayPatterns) {
+            const matches = [...jsContent.matchAll(pattern)];
             
-            // Array'i string'e çevir
-            const chars = numbers.map(n => String.fromCharCode(n)).join('');
-            data.staticString = chars.split('').reverse().join('');
+            for (const match of matches) {
+                const arrayStr = match[1];
+                const numbers = arrayStr.split(',').map(n => parseInt(n.trim()));
+                
+                // Validate array - check if numbers are in printable ASCII range
+                if (numbers.length === 10 && numbers.every(n => n >= 32 && n <= 126)) {
+                    data.staticStringArray = numbers;
+                    
+                    // Array'i string'e çevir
+                    const chars = numbers.map(n => String.fromCharCode(n)).join('');
+                    
+                    // Test both normal and reversed string
+                    const normalString = chars;
+                    const reversedString = chars.split('').reverse().join('');
+                    
+                    console.log(`🔍 Found array: [${numbers.join(', ')}]`);
+                    console.log(`📝 Normal string: "${normalString}"`);
+                    console.log(`📝 Reversed string: "${reversedString}"`);
+                    
+                    // Known good patterns - use exact match first
+                    const knownPatterns = [
+                        'SORRY_MATE',
+                        'ETAM_YRROS',
+                        'jv7g2_DAMN',
+                        'NNAD_2g7vj'
+                    ];
+                    
+                    if (knownPatterns.includes(normalString)) {
+                        data.staticString = normalString;
+                        console.log(`✅ Using normal string (known pattern): ${normalString}`);
+                    } else if (knownPatterns.includes(reversedString)) {
+                        data.staticString = reversedString;
+                        console.log(`✅ Using reversed string (known pattern): ${reversedString}`);
+                    } else {
+                        // Heuristic: if string looks like meaningful text, use it
+                        // Otherwise use reversed
+                        const normalScore = this.calculateStringScore(normalString);
+                        const reversedScore = this.calculateStringScore(reversedString);
+                        
+                        if (normalScore >= reversedScore) {
+                            data.staticString = normalString;
+                            console.log(`✅ Using normal string (score: ${normalScore}): ${normalString}`);
+                        } else {
+                            data.staticString = reversedString;
+                            console.log(`✅ Using reversed string (score: ${reversedScore}): ${reversedString}`);
+                        }
+                    }
+                    
+                    staticArrayFound = true;
+                    break;
+                }
+            }
             
-            console.log(`📋 Static string found: ${data.staticString}`);
+            if (staticArrayFound) break;
         }
 
-        // CSS hash pattern'ini bul
-        const cssPatternMatch = jsContent.match(/\/([^/]+main[^/]+\.css[^/]*)\//);
-        if (cssPatternMatch) {
-            data.cssHashRegex = cssPatternMatch[1];
+        // 2. Fallback: bilinen iyi değerleri ara
+        if (!staticArrayFound) {
+            console.log('⚠️  Array not found, searching for known string patterns...');
+            
+            const knownStringPatterns = [
+                /["']SORRY_MATE["']/g,
+                /["']ETAM_YRROS["']/g,
+                /["']jv7g2_DAMN["']/g,
+                /["']NNAD_2g7vj["']/g
+            ];
+            
+            for (const pattern of knownStringPatterns) {
+                const match = jsContent.match(pattern);
+                if (match) {
+                    const foundString = match[0].replace(/["']/g, '');
+                    data.staticString = foundString;
+                    
+                    // Generate corresponding array
+                    const chars = foundString.split('');
+                    data.staticStringArray = chars.map(c => c.charCodeAt(0));
+                    
+                    console.log(`✅ Found known string pattern: ${foundString}`);
+                    console.log(`📋 Generated array: [${data.staticStringArray.join(', ')}]`);
+                    staticArrayFound = true;
+                    break;
+                }
+            }
         }
 
-        // Hostname length calculation'ı bul
-        const hostnameMatch = jsContent.match(/document\.location\.hostname\.length/);
-        if (hostnameMatch) {
+        // 3. Ultimate fallback
+        if (!staticArrayFound) {
+            console.log('⚠️  No valid static string found, using fallback...');
+            data.staticString = "SORRY_MATE";
+            data.staticStringArray = [83, 79, 82, 82, 89, 95, 77, 65, 84, 69]; // SORRY_MATE
+            console.log(`🔧 Using fallback: ${data.staticString}`);
+        }
+
+        // 4. CSS hash pattern'ini bul - improved patterns
+        const cssPatterns = [
+            /\/([^/]*main[^/]*\.css[^/]*)\//g,
+            /main\.([a-f0-9]+)\.css/g,
+            /\/build\/main\.([^"']+?)\.css/g,
+            /css[^}]*main[^}]*\.([a-f0-9]+)/g
+        ];
+        
+        for (const pattern of cssPatterns) {
+            const match = jsContent.match(pattern);
+            if (match) {
+                data.cssHashRegex = match[1] || match[0];
+                console.log(`🎨 CSS pattern found: ${data.cssHashRegex}`);
+                break;
+            }
+        }
+
+        // 5. Hostname length calculation
+        if (/document\.location\.hostname\.length/.test(jsContent)) {
             data.usesHostnameLength = true;
+            console.log(`🌐 Uses hostname length calculation`);
         }
+
+        // 6. Additional validation
+        this.validateExtractedParams(data);
 
         return data;
+    }
+
+    // Helper function to score string meaningfulness
+    calculateStringScore(str) {
+        let score = 0;
+        
+        // Prefer strings with underscores (common in identifiers)
+        if (str.includes('_')) score += 20;
+        
+        // Prefer strings with mixed case
+        if (/[A-Z]/.test(str) && /[a-z]/.test(str)) score += 15;
+        
+        // Prefer strings that look like words
+        if (/^[A-Z][A-Z_]*$/.test(str)) score += 10; // ALL_CAPS_STYLE
+        if (/^[a-z][a-zA-Z0-9_]*$/.test(str)) score += 8; // camelCase style
+        
+        // Penalty for strings starting with numbers
+        if (/^\d/.test(str)) score -= 10;
+        
+        // Bonus for known prefixes/suffixes
+        if (str.includes('SORRY') || str.includes('MATE') || str.includes('DAMN')) score += 25;
+        
+        return score;
+    }
+
+    // Validation function
+    validateExtractedParams(data) {
+        console.log('🔍 Validating extracted parameters...');
+        
+        // Validate static string
+        if (data.staticString && data.staticString.length >= 6) {
+            console.log(`✅ Static string valid: ${data.staticString} (length: ${data.staticString.length})`);
+        } else {
+            console.log(`⚠️  Static string questionable: ${data.staticString}`);
+        }
+        
+        // Validate array consistency
+        if (data.staticString && data.staticStringArray) {
+            const reconstructed = data.staticStringArray.map(n => String.fromCharCode(n)).join('');
+            const reconstructedReversed = data.staticStringArray.map(n => String.fromCharCode(n)).join('').split('').reverse().join('');
+            
+            if (reconstructed === data.staticString) {
+                console.log(`✅ Array-String consistency check passed (normal)`);
+            } else if (reconstructedReversed === data.staticString) {
+                console.log(`✅ Array-String consistency check passed (reversed)`);
+            } else {
+                console.log(`⚠️  Array-String consistency check failed`);
+                console.log(`   Reconstructed: "${reconstructed}"`);
+                console.log(`   Reconstructed (reversed): "${reconstructedReversed}"`);
+                console.log(`   Expected: "${data.staticString}"`);
+            }
+        }
     }
 
     extractSignatureParams(jsContent) {
