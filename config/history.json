@@ -1,5 +1,66 @@
 [
   {
+    "version": "2025.06.14.1500",
+    "hash": "7edbaed05e933c8c",
+    "timestamp": "2025-06-14T15:00:11.773Z",
+    "changes": [
+      "static_string_changed",
+      "css_hash_changed",
+      "signature_static_suffix_changed",
+      "signature_quality_changed",
+      "signature_completeness_changed",
+      "signature_correction_status_changed"
+    ],
+    "algorithm": {
+      "staticString": "SORRY_MATE",
+      "staticStringArray": [
+        83,
+        79,
+        82,
+        82,
+        89,
+        95,
+        77,
+        65,
+        84,
+        69
+      ],
+      "hostnameLength": 12,
+      "cssHashPattern": null,
+      "decryptFunctionFound": true,
+      "signatureParams": {
+        "staticSuffix": "jv7g2_DAMNN_DUDE",
+        "encryptFunctionFound": true,
+        "extractPattern": "searchEngine:\"yt\"",
+        "implementationDetails": {
+          "hasStaticSuffix": true,
+          "hasEncryptFunction": true,
+          "usesBase64": true,
+          "extractPatternFound": true,
+          "correctionApplied": true,
+          "correctionReason": "Invalid suffix detected, applied known good parameters",
+          "detectedAt": "2025-06-14T15:00:11.761Z"
+        },
+        "completenessScore": 95,
+        "quality": "high",
+        "hasBase64Implementation": true,
+        "usesSigParam": true,
+        "suffixCorrected": true
+      },
+      "endpoints": {
+        "token": "https://ab1.9xbud.com/token",
+        "extract": "https://ab1.9xbud.com/extract"
+      },
+      "jsFiles": [
+        "/build/main.cb67d183996514034d45.js"
+      ],
+      "extractedFrom": "/build/main.cb67d183996514034d45.js",
+      "signatureExtractedFrom": "/build/main.cb67d183996514034d45.js",
+      "cssHashRegex": "/m*16*.0625,\"em\")}:{};d&&(y.attributes[U]=\"\"),s&&(y.children.push({tag:\"title\",attributes:{id:y.attributes[\"aria-labelledby\"]||\"title-\".concat(u||me())},children:[s]}),delete y.attributes.title);const b=o(o({},y),{},{prefix:r,iconName:a,main:t,mask:n,maskId:c,transform:i,symbol:l,styles:o(o({},v),f.styles)}),{children:w,attributes:x}=n.found&&t.found?ct(\"generateAbstractMask\",b)||{children:[],attributes:{}}:ct(\"generateAbstractIcon\",b)||{children:[],attributes:{}};return b.children=w,b.attributes=x,l?function(e){let{prefix:t,iconName:n,children:r,attributes:a,symbol:i}=e;const l=!0===i?\"\".concat(t,\"-\").concat(ue.cssPrefix,\"-\").concat(n):i;return[{tag:\"svg\",attributes:{style:\"display: none;\"},children:[{tag:\"symbol\",attributes:o(o({},a),{},{id:l}),children:r}]}]}(b):function(e){let{children:t,main:n,mask:r,attributes:a,styles:i,transform:l}=e;if(be(l)&&n.found&&!r.found){const{width:e,height:t}=n,r={x:e/",
+      "cssHash": "cb67d183996514034d45"
+    }
+  },
+  {
     "version": "2025.06.09.2250",
     "hash": "22d4ebd129b5d5df",
     "timestamp": "2025-06-09T22:50:16.436Z",
