@@ -1,8 +1,8 @@
 {
-  "version": "2025.06.20.0113",
-  "hash": "ddd1cb8bb0c8b4f7",
-  "lastUpdate": "2025-06-20T01:13:50.104Z",
-  "detectedAt": "2025-06-20T01:13:50.104Z",
+  "version": "2025.07.09.0116",
+  "hash": "a9eb3859ad2f323d",
+  "lastUpdate": "2025-07-09T01:16:16.247Z",
+  "detectedAt": "2025-07-09T01:16:16.247Z",
   "algorithm": {
     "staticString": "SORRY_MATE",
     "staticStringArray": [
@@ -31,7 +31,7 @@
         "extractPatternFound": true,
         "correctionApplied": true,
         "correctionReason": "Invalid suffix detected, applied known good parameters",
-        "detectedAt": "2025-06-20T01:13:50.103Z"
+        "detectedAt": "2025-07-09T01:16:16.247Z"
       },
       "completenessScore": 95,
       "quality": "high",
@@ -44,13 +44,12 @@
       "extract": "https://ab1.9xbud.com/extract"
     },
     "jsFiles": [
-      "/build/main.0bd42c6c8e9b81555b7b.js"
+      "/build/main.67a2c172b66166f65d0e.js"
     ],
-    "extractedFrom": "/build/main.0bd42c6c8e9b81555b7b.js",
-    "signatureExtractedFrom": "/build/main.0bd42c6c8e9b81555b7b.js",
+    "extractedFrom": "/build/main.67a2c172b66166f65d0e.js",
+    "signatureExtractedFrom": "/build/main.67a2c172b66166f65d0e.js",
     "cssHashRegex": "/m*16*.0625,\"em\")}:{};d&&(y.attributes[U]=\"\"),s&&(y.children.push({tag:\"title\",attributes:{id:y.attributes[\"aria-labelledby\"]||\"title-\".concat(u||me())},children:[s]}),delete y.attributes.title);const b=o(o({},y),{},{prefix:r,iconName:a,main:t,mask:n,maskId:c,transform:i,symbol:l,styles:o(o({},v),f.styles)}),{children:w,attributes:x}=n.found&&t.found?ct(\"generateAbstractMask\",b)||{children:[],attributes:{}}:ct(\"generateAbstractIcon\",b)||{children:[],attributes:{}};return b.children=w,b.attributes=x,l?function(e){let{prefix:t,iconName:n,children:r,attributes:a,symbol:i}=e;const l=!0===i?\"\".concat(t,\"-\").concat(ue.cssPrefix,\"-\").concat(n):i;return[{tag:\"svg\",attributes:{style:\"display: none;\"},children:[{tag:\"symbol\",attributes:o(o({},a),{},{id:l}),children:r}]}]}(b):function(e){let{children:t,main:n,mask:r,attributes:a,styles:i,transform:l}=e;if(be(l)&&n.found&&!r.found){const{width:e,height:t}=n,r={x:e/",
     "cssHash": "cb67d183996514034d45"
   },
-  "status": "active",
-  "lastChecked": "2025-07-08T18:21:33.345Z"
+  "status": "active"
 }
