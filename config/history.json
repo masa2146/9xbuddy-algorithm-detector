@@ -1,5 +1,61 @@
 [
   {
+    "version": "2025.07.09.1821",
+    "hash": "a86cbc3efc877d6b",
+    "timestamp": "2025-07-09T18:21:42.746Z",
+    "changes": [
+      "js_file_changed"
+    ],
+    "algorithm": {
+      "staticString": "SORRY_MATE",
+      "staticStringArray": [
+        83,
+        79,
+        82,
+        82,
+        89,
+        95,
+        77,
+        65,
+        84,
+        69
+      ],
+      "hostnameLength": 12,
+      "cssHashPattern": null,
+      "decryptFunctionFound": true,
+      "signatureParams": {
+        "staticSuffix": "jv7g2_DAMNN_DUDE",
+        "encryptFunctionFound": true,
+        "extractPattern": "searchEngine:\"yt\"",
+        "implementationDetails": {
+          "hasStaticSuffix": true,
+          "hasEncryptFunction": true,
+          "usesBase64": true,
+          "extractPatternFound": true,
+          "correctionApplied": true,
+          "correctionReason": "Invalid suffix detected, applied known good parameters",
+          "detectedAt": "2025-07-09T18:21:42.745Z"
+        },
+        "completenessScore": 95,
+        "quality": "high",
+        "hasBase64Implementation": true,
+        "usesSigParam": true,
+        "suffixCorrected": true
+      },
+      "endpoints": {
+        "token": "https://ab1.9xbud.com/token",
+        "extract": "https://ab1.9xbud.com/extract"
+      },
+      "jsFiles": [
+        "/build/main.0ae41371bd7ead4356ae.js"
+      ],
+      "extractedFrom": "/build/main.0ae41371bd7ead4356ae.js",
+      "signatureExtractedFrom": "/build/main.0ae41371bd7ead4356ae.js",
+      "cssHashRegex": "/m*16*.0625,\"em\")}:{};d&&(y.attributes[U]=\"\"),s&&(y.children.push({tag:\"title\",attributes:{id:y.attributes[\"aria-labelledby\"]||\"title-\".concat(u||me())},children:[s]}),delete y.attributes.title);const b=o(o({},y),{},{prefix:r,iconName:a,main:t,mask:n,maskId:c,transform:i,symbol:l,styles:o(o({},v),f.styles)}),{children:w,attributes:x}=n.found&&t.found?ct(\"generateAbstractMask\",b)||{children:[],attributes:{}}:ct(\"generateAbstractIcon\",b)||{children:[],attributes:{}};return b.children=w,b.attributes=x,l?function(e){let{prefix:t,iconName:n,children:r,attributes:a,symbol:i}=e;const l=!0===i?\"\".concat(t,\"-\").concat(ue.cssPrefix,\"-\").concat(n):i;return[{tag:\"svg\",attributes:{style:\"display: none;\"},children:[{tag:\"symbol\",attributes:o(o({},a),{},{id:l}),children:r}]}]}(b):function(e){let{children:t,main:n,mask:r,attributes:a,styles:i,transform:l}=e;if(be(l)&&n.found&&!r.found){const{width:e,height:t}=n,r={x:e/",
+      "cssHash": "cb67d183996514034d45"
+    }
+  },
+  {
     "version": "2025.07.09.1231",
     "hash": "803c77b8d146f57c",
     "timestamp": "2025-07-09T12:31:53.878Z",
