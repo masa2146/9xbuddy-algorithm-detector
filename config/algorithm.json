@@ -51,5 +51,6 @@
     "cssHashRegex": "/m*16*.0625,\"em\")}:{};d&&(y.attributes[U]=\"\"),s&&(y.children.push({tag:\"title\",attributes:{id:y.attributes[\"aria-labelledby\"]||\"title-\".concat(u||me())},children:[s]}),delete y.attributes.title);const b=o(o({},y),{},{prefix:r,iconName:a,main:t,mask:n,maskId:c,transform:i,symbol:l,styles:o(o({},v),f.styles)}),{children:w,attributes:x}=n.found&&t.found?ct(\"generateAbstractMask\",b)||{children:[],attributes:{}}:ct(\"generateAbstractIcon\",b)||{children:[],attributes:{}};return b.children=w,b.attributes=x,l?function(e){let{prefix:t,iconName:n,children:r,attributes:a,symbol:i}=e;const l=!0===i?\"\".concat(t,\"-\").concat(ue.cssPrefix,\"-\").concat(n):i;return[{tag:\"svg\",attributes:{style:\"display: none;\"},children:[{tag:\"symbol\",attributes:o(o({},a),{},{id:l}),children:r}]}]}(b):function(e){let{children:t,main:n,mask:r,attributes:a,styles:i,transform:l}=e;if(be(l)&&n.found&&!r.found){const{width:e,height:t}=n,r={x:e/",
     "cssHash": "cb67d183996514034d45"
   },
-  "status": "active"
+  "status": "active",
+  "lastChecked": "2025-07-10T01:16:07.691Z"
 }
